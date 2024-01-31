@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Notebook</title>
+    <style>
+        #notesContainer {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="notesContainer">
+        <h2>Notebook</h2>
+        <p>Total notes: <span id="totalNotes">0</span></p>
+
+        <form id="noteForm">
+            <label for="noteTitle">Title:</label>
+            <input type="text" id="noteTitle" required>
+            <br>
+            <label for="noteContent">Content:</label>
+            <textarea id="noteContent" required></textarea>
+            <br>
+            <button type="button" onclick="addNote()">Add Note</button>
+        </form>
+
+        <hr>
+
+        <label for="searchKeyword">Search:</label>
+        <input type="text" id="searchKeyword" oninput="searchNotes()">
+
+        <p>Notes Showing: <span id="notesShowing">0</span></p>
+
+        <ul id="notesList"></ul>
+    </div>
+
+    <script>
+        const apiUrl = 'https://crudcrud.com/api/acceceb710664ca391641ac55c95d72c/noteBook';
+        let notes = [];
+
+        async function fetchNotes() {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            notes = data;
+            displayNotes();
+        }
+
+        async function addNote() {
+            const title = document.getElementById('noteTitle').value;
+            const content = document.getElementById('noteContent').value;
+
+            if (title && content) {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, content }),
+                });
+
+                if (response.ok) {
+                    fetchNotes();
+                    document.getElementById('noteTitle').value = '';
+                    document.getElementById('noteContent').value = '';
+                }
+            }
+        }
+
+        async function deleteNote(id) {
+            const response = await fetch(`${apiUrl}/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                fetchNotes();
+            }
+        }
+
+        function displayNotes(filteredNotes = null) {
+            const notesList = document.getElementById('notesList');
+            const totalNotes = document.getElementById('totalNotes');
+            const notesShowing = document.getElementById('notesShowing');
+
+            notesList.innerHTML = '';
+            const displayNotes = filteredNotes || notes;
+            totalNotes.textContent = notes.length;
+            notesShowing.textContent = displayNotes.length;
+
+            displayNotes.forEach(note => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <strong>${note.title}</strong>: ${note.content}
+                    <button onclick="deleteNote('${note._id}')">Delete</button>
+                `;
+                notesList.appendChild(listItem);
+            });
+        }
+
+        function searchNotes() {
+            const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+            const filteredNotes = notes.filter(note => note.title.toLowerCase().includes(keyword) || note.content.toLowerCase().includes(keyword));
+            displayNotes(filteredNotes);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchNotes();
+        });
+    </script>
+</body>
+
+</html>
